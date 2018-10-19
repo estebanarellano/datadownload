@@ -1,0 +1,8 @@
+---
+title: "Final Precis"
+author: "Esteban Arellano"
+date: "10/19/2018"
+output: html_document
+---
+
+For my final project, I will be looking at the "My Brother's Keeper Key Statistical Indicators on Boys and Men of Color" dataset. This dataset contains a variety of data about males of color across the nation including family makeup, income, poverty levels, etc. I am interested in finding what indicators have the biggest impact on a man of color's opportunity in the nation.
