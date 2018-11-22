@@ -1,0 +1,32 @@
+---
+title: "Final"
+author: "Esteban Arellano"
+date: "11/22/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(fs)
+library(stringr)
+
+income <- read.csv("https://opportunityinsights.org/wp-content/uploads/2018/10/county_outcomes_simple.csv")
+
+neighborhood <- read.csv("https://opportunityinsights.org/wp-content/uploads/2018/10/cty_covariates.csv")
+
+all <- income %>%
+  left_join(neighborhood)
+```
+
+```{r}
+# Creates tidy income table
+tidy_income <- income %>%
+  gather("metric", "value", kfr_pooled_pooled_p25:hisp_female_count) %>%
+  mutate(gender = str_extract(string = metric, pattern = "male|female")) %>%
+  mutate(race = str_extract(string = metric, pattern = "black|hisp|white")) %>%
+  mutate(metric_type = str_extract(string = metric, pattern = "kfr|jail|count")) %>%
+  mutate(metric_type = fct_recode(metric_type, income = "kfr"))
+```
+
+
