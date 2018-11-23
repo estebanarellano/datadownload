@@ -28,16 +28,17 @@ ui <- fluidPage(
                                 selected = c("black", "white", "hisp")),
              checkboxGroupInput("gender", "Gender:", c("Male" = "male", 
                                                        "Female" = "female"),
-                                selected = c("male", "female"))
+                                selected = c("male", "female")),
+             sliderInput("alpha", "Opacity of points:",
+                         0, 1, 0.5, step = .05)
            )
     ),
     column(9,
-           plotOutput("distPlot"),
-           wellPanel(
-             span("Number of movies selected:",
-                  textOutput("n_movies")
-             )
-           )
+           h4(
+             span(textOutput("title"), 
+                  "vs. Mean Income Rank of Children Whose Parents Were at the 25th Percentile")
+           ),
+           plotOutput("distPlot")
     )
   )
 )
@@ -46,15 +47,18 @@ ui <- fluidPage(
 server <- function(input, output) {
   
   output$distPlot <- renderPlot({
-    raceplot <- tidy_all %>%
+    results <- tidy_all %>%
       filter(metric_type == "income") %>%
       filter(race %in% input$race) %>%
       filter(gender %in% input$gender) %>%
-      ggplot(aes_string(x = input$xvar, y = "value", color = "race")) +
-      geom_point()
-    print(raceplot)
+      mutate(value = value * 100)
+    
+    ggplot(results, aes_string(x = input$xvar, y = "value", color = "race", shape = "gender")) +
+    geom_point(alpha = input$alpha) +
+    labs(x = names(axis_vars)[axis_vars == input$xvar], y = "Mean Income Rank for Children Whose Parents Were at 25th Percentile")
   })
   
+  output$title <- renderText({ names(axis_vars)[axis_vars == input$xvar] })
 }
 
 # Run the application 
