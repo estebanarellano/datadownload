@@ -12,6 +12,7 @@ library(fs)
 library(stringr)
 library(cdlTools)
 library(tigris)
+library(rgdal)
 
 income <- read.csv("https://opportunityinsights.org/wp-content/uploads/2018/10/county_outcomes_simple.csv")
 
@@ -22,7 +23,7 @@ all <- income %>%
 ```
 
 ```{r}
-# Creates tidy income table
+# Preparation for Income shiny
 fips <- as_data_frame(fips_codes)
 
 fips <- fips %>%
@@ -52,4 +53,14 @@ tidy_all <- as_data_frame(tidy_all)
 tidy_all <- tidy_all[, c(1, 2, 10, 11, 3:9, 12:42)]
 ```
 
+```{r}
+map <- tidy_all %>%
+  mutate(state_code = ifelse(nchar(state_code) == 1, paste(0, state_code, sep = ""), state_code)) %>%
+  mutate(county_code = ifelse(nchar(county_code) == 1, paste("00", county_code, sep = ""), county_code)) %>%
+  mutate(county_code = ifelse(nchar(county_code) == 2, paste(0, county_code, sep = ""), county_code)) %>%
+  mutate(GEOID = paste(state_code, county_code, sep = "")) %>%
+  mutate(state_code = as.numeric(state_code), county_code = as.numeric(county_code))
+
+map <- map[, c(43, 1:42)]
+```
 
