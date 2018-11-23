@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(fs)
 library(stringr)
+library(cdlTools)
+library(tigris)
 
 income <- read.csv("https://opportunityinsights.org/wp-content/uploads/2018/10/county_outcomes_simple.csv")
 
@@ -21,17 +23,33 @@ all <- income %>%
 
 ```{r}
 # Creates tidy income table
+fips <- as_data_frame(fips_codes)
+
+fips <- fips %>%
+  mutate(state_code = as.numeric(state_code)) %>%
+  mutate(county_code = as.numeric(county_code)) %>%
+  mutate(id = paste(county, state, sep = ", ")) %>%
+  select(state_code, county_code, state_name, id)
+
 tidy_income <- income %>%
   gather("metric", "value", kfr_pooled_pooled_p25:hisp_female_count) %>%
   mutate(gender = str_extract(string = metric, pattern = "male|female")) %>%
   mutate(race = str_extract(string = metric, pattern = "black|hisp|white")) %>%
   mutate(metric_type = str_extract(string = metric, pattern = "kfr|jail|count")) %>%
-  mutate(metric_type = fct_recode(metric_type, income = "kfr"))
+  mutate(metric_type = fct_recode(metric_type, income = "kfr")) %>%
+  mutate(race = fct_recode(race, hispanic = "hisp")) %>%
+  rename(state_code = state, county_code = county) %>%
+  left_join(fips)
+
+neighborhood <- neighborhood %>%
+  rename(state_code = state, county_code = county)
 
 tidy_all <- tidy_income %>%
   left_join(neighborhood)
 
 tidy_all <- as_data_frame(tidy_all)
+
+tidy_all <- tidy_all[, c(1, 2, 10, 11, 3:9, 12:42)]
 ```
 
 

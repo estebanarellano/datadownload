@@ -21,10 +21,13 @@ ui <- fluidPage(
     column(3,
            wellPanel(
              h4("Filter"),
-             selectInput("xvar", "X-axis:", names(tidy_all)[10:40]),
-             checkboxGroupInput("race", "Race:", c("black", "white", "hisp"), 
+             selectInput("xvar", "X-axis:", axis_vars),
+             checkboxGroupInput("race", "Race:", c("Black" = "black", 
+                                                   "White" = "white", 
+                                                   "Hispanic" = "hispanic"), 
                                 selected = c("black", "white", "hisp")),
-             checkboxGroupInput("gender", "Gender:", c("male", "female"),
+             checkboxGroupInput("gender", "Gender:", c("Male" = "male", 
+                                                       "Female" = "female"),
                                 selected = c("male", "female"))
            )
     ),
