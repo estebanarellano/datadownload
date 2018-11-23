@@ -5,7 +5,7 @@ date: "11/22/2018"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, cache=TRUE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(fs)
@@ -13,6 +13,7 @@ library(stringr)
 library(cdlTools)
 library(tigris)
 library(rgdal)
+library(leaflet)
 
 income <- read.csv("https://opportunityinsights.org/wp-content/uploads/2018/10/county_outcomes_simple.csv")
 
@@ -20,6 +21,7 @@ neighborhood <- read.csv("https://opportunityinsights.org/wp-content/uploads/201
 
 all <- income %>%
   left_join(neighborhood)
+
 ```
 
 ```{r}
@@ -54,13 +56,33 @@ tidy_all <- tidy_all[, c(1, 2, 10, 11, 3:9, 12:42)]
 ```
 
 ```{r}
+# Preparation for map
 map <- tidy_all %>%
   mutate(state_code = ifelse(nchar(state_code) == 1, paste(0, state_code, sep = ""), state_code)) %>%
   mutate(county_code = ifelse(nchar(county_code) == 1, paste("00", county_code, sep = ""), county_code)) %>%
   mutate(county_code = ifelse(nchar(county_code) == 2, paste(0, county_code, sep = ""), county_code)) %>%
   mutate(GEOID = paste(state_code, county_code, sep = "")) %>%
-  mutate(state_code = as.numeric(state_code), county_code = as.numeric(county_code))
+  mutate(state_code = as.numeric(state_code), county_code = as.numeric(county_code)) %>%
+  select(GEOID, value)
 
-map <- map[, c(43, 1:42)]
+# map <- map[, c(43, 1:42)]
+
+us.map.county <- readOGR(dsn= './cb_2017_us_county_20m', layer = "cb_2017_us_county_20m", stringsAsFactors = FALSE)
+
+# Remove Alaska(2), Hawaii(15), Puerto Rico (72), Guam (66), Virgin Islands (78), American Samoa (60) Mariana Islands (69), Micronesia (64), Marshall Islands (68), Palau (70), Minor Islands (74)
+us.map.county <- us.map.county[!us.map.county$STATEFP %in% c("02", "15", "72", "66", "78", "60", "69","64", "68", "70", "74", "81", "84", "86", "87", "89", "71", "76","95", "79"),]
+
+leafmap <- sp::merge(map, us.map.county, by= 'GEOID', duplicateGeoms = TRUE)
+
+pal <- colorQuantile("Spectral", NULL, n = 10)
+
+leaflet(data = leafmap) %>% 
+    addTiles() %>%
+    addPolygons(fillColor = ~pal(value),
+                weight = 2,
+                opacity = 1,
+                color = "white",
+                dashArray = "3",
+                fillOpacity = 0.7)
 ```
 
