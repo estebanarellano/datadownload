@@ -27,6 +27,11 @@ tidy_income <- income %>%
   mutate(race = str_extract(string = metric, pattern = "black|hisp|white")) %>%
   mutate(metric_type = str_extract(string = metric, pattern = "kfr|jail|count")) %>%
   mutate(metric_type = fct_recode(metric_type, income = "kfr"))
+
+tidy_all <- tidy_income %>%
+  left_join(neighborhood)
+
+tidy_all <- as_data_frame(tidy_all)
 ```
 
 
