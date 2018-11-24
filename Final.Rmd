@@ -65,11 +65,15 @@ map <- tidy_income %>%
   mutate(county_code = ifelse(nchar(county_code) == 2, paste(0, county_code, sep = ""), county_code)) %>%
   mutate(GEOID = paste(state_code, county_code, sep = "")) %>%
   mutate(state_code = as.numeric(state_code), county_code = as.numeric(county_code)) %>%
+  mutate(category = ifelse(is.na(race) & is.na(gender), "all", ifelse(is.na(race), paste("all", gender, sep = "_"), ifelse(is.na(gender), paste("all", race, sep = "_"), paste(race, gender, sep = "_"))))) %>%
   filter(metric_type == "income") %>%
-  select(GEOID, id, metric_type, race, gender, value) %>%
-  arrange(GEOID, race, gender)
-
-# map <- map[, c(43, 1:42)]
+  mutate(value = value * 100) %>%
+  select(GEOID, id, category, value) %>%
+  group_by(GEOID) %>%
+  spread(category, value) %>%
+  mutate(black_white_male = (black_male + white_male) / 2, black_white_female = (black_female + white_female) / 2, all_black_white = (all_black + all_white) / 2) %>%
+  mutate(black_hispanic_male = (black_male + hispanic_male) / 2, black_hispanic_female = (black_female + hispanic_female) / 2, all_black_hispanic = (all_black + all_hispanic) / 2) %>%
+  mutate(hispanic_white_male = (hispanic_male + white_male) / 2, hispanic_white_female = (hispanic_female + white_female) / 2, all_hispanic_white = (all_hispanic + all_white) / 2)
 
 us.map.county <- readOGR(dsn= './cb_2017_us_county_20m', layer = "cb_2017_us_county_20m", stringsAsFactors = FALSE)
 
@@ -78,15 +82,22 @@ us.map.county <- us.map.county[!us.map.county$STATEFP %in% c("02", "15", "72", "
 
 leafmap <- merge(us.map.county, map, by= 'GEOID', duplicateGeoms = TRUE)
 
-pal <- colorQuantile("Spectral", NULL, n = 10)
+popup_dat <- paste0("<strong>County: </strong>",
+                    leafmap$id,
+                    "<br><strong>Mean Income Rank for Children Whose Parents Were at 25th Percentile: </strong>",
+                    leafmap$all, "%")
+
+pal <- colorQuantile("RdYlGn", NULL, n = 10)
 
 leaflet(data = leafmap) %>% 
-    addTiles() %>%
-    addPolygons(fillColor = ~pal(value),
-                weight = 2,
-                opacity = 1,
-                color = "white",
-                dashArray = "3",
-                fillOpacity = 0.7)
+  addTiles() %>%
+  addPolygons(fillColor = ~pal(all),
+              fillOpacity = 0.8,
+              color = "#BDBDC3",
+              weight = 1,
+              popup = popup_dat) %>%
+  addLegend("bottomright", pal = pal, values = ~all,
+            title = "Mean Income Rank (%)",
+            opacity = 1)
 ```
 
