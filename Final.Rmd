@@ -12,7 +12,7 @@ library(fs)
 library(stringr)
 library(cdlTools)
 library(tigris)
-library(rgdal)
+library(rgdal) # Tools to create leaflet sp frame
 library(leaflet)
 
 income <- read.csv("https://opportunityinsights.org/wp-content/uploads/2018/10/county_outcomes_simple.csv")
@@ -40,8 +40,10 @@ tidy_income <- income %>%
   mutate(race = str_extract(string = metric, pattern = "black|hisp|white")) %>%
   mutate(metric_type = str_extract(string = metric, pattern = "kfr|jail|count")) %>%
   mutate(metric_type = fct_recode(metric_type, income = "kfr")) %>%
+  mutate(se = str_detect(string = metric, pattern = "se")) %>% # Categories standard error income values
   mutate(race = fct_recode(race, hispanic = "hisp")) %>%
   rename(state_code = state, county_code = county) %>%
+  filter(se != TRUE, metric_type == "income") %>% # Keeps all income, removes standard errors
   left_join(fips)
 
 neighborhood <- neighborhood %>%
@@ -52,18 +54,20 @@ tidy_all <- tidy_income %>%
 
 tidy_all <- as_data_frame(tidy_all)
 
-tidy_all <- tidy_all[, c(1, 2, 10, 11, 3:9, 12:42)]
+tidy_all <- tidy_all[, c(1, 2, 9, 11, 3:8, 12:43)]
 ```
 
 ```{r}
 # Preparation for map
-map <- tidy_all %>%
+map <- tidy_income %>%
   mutate(state_code = ifelse(nchar(state_code) == 1, paste(0, state_code, sep = ""), state_code)) %>%
   mutate(county_code = ifelse(nchar(county_code) == 1, paste("00", county_code, sep = ""), county_code)) %>%
   mutate(county_code = ifelse(nchar(county_code) == 2, paste(0, county_code, sep = ""), county_code)) %>%
   mutate(GEOID = paste(state_code, county_code, sep = "")) %>%
   mutate(state_code = as.numeric(state_code), county_code = as.numeric(county_code)) %>%
-  select(GEOID, value)
+  filter(metric_type == "income") %>%
+  select(GEOID, id, metric_type, race, gender, value) %>%
+  arrange(GEOID, race, gender)
 
 # map <- map[, c(43, 1:42)]
 
@@ -72,7 +76,7 @@ us.map.county <- readOGR(dsn= './cb_2017_us_county_20m', layer = "cb_2017_us_cou
 # Remove Alaska(2), Hawaii(15), Puerto Rico (72), Guam (66), Virgin Islands (78), American Samoa (60) Mariana Islands (69), Micronesia (64), Marshall Islands (68), Palau (70), Minor Islands (74)
 us.map.county <- us.map.county[!us.map.county$STATEFP %in% c("02", "15", "72", "66", "78", "60", "69","64", "68", "70", "74", "81", "84", "86", "87", "89", "71", "76","95", "79"),]
 
-leafmap <- sp::merge(map, us.map.county, by= 'GEOID', duplicateGeoms = TRUE)
+leafmap <- merge(us.map.county, map, by= 'GEOID', duplicateGeoms = TRUE)
 
 pal <- colorQuantile("Spectral", NULL, n = 10)
 
