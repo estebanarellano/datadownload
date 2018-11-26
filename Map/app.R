@@ -17,7 +17,7 @@ leafmap <- read_rds("./leafmap.rds")
 # Define UI for application that draws a histogram
 ui <- fluidPage(
    
-  titlePanel("Movie explorer"),
+  titlePanel("Geographic Income Explorer by US County"),
   fluidRow(
     column(3,
            wellPanel(
@@ -29,10 +29,8 @@ ui <- fluidPage(
            )
     ),
     column(9,
-           h4(
-             span(textOutput("title"), 
-                  "vs. Mean Income Rank of Children Whose Parents Were at the 25th Percentile")
-           ),
+           h4(div("Mean Income Rank of Children Whose Parents Were at the 25th Percentile"
+           )),
            leafletOutput("mymap")
     )
   )
@@ -55,72 +53,119 @@ server <- function(input, output) {
    
    if (race == c("Black", "White", "Hispanic") & gender == c("Male", "Female")) {
      data <- leafmap$all
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "Black, White, and Hispanic"
+     gender_text <- "Men and Women"
    } else if (race == c("Black", "White") & gender == c("Male", "Female")) {
      data <- leafmap$all_black_white
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "Black and White"
+     gender_text <- "Men and Women"
    } else if (race == c("Black", "Hispanic") & gender == c("Male", "Female")) {
      data <- leafmap$all_black_hispanic
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "Black and Hispanic"
+     gender_text <- "Men and Women"
    } else if (race == "Black" & gender == c("Male", "Female")) {
      data <- leafmap$all_black
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "Black"
+     gender_text <- "Men and Women"
    } else if (race == c("Black", "White", "Hispanic") & gender == "Male") {
      data <- leafmap$all_male
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "Black, White, and Hispanic"
+     gender_text <- "Men"
    } else if (race == c("Black", "White") & gender == "Male") {
      data <- leafmap$black_white_male
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "Black and White"
+     gender_text <- "Men"
    } else if (race == c("Black", "Hispanic") & gender == "Male") {
      data <- leafmap$black_hispanic_male
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "Black and Hispanic"
+     gender_text <- "Men"
    } else if (race == "Black" & gender == "Male") {
      data <- leafmap$black_male
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "Black"
+     gender_text <- "Men"
    } else if (race == c("Black", "White", "Hispanic") & gender == "Female") {
      data <- leafmap$all_female
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "Black, White, and Hispanic"
+     gender_text <- "Women"
    } else if (race == c("Black", "White") & gender == "Female") {
      data <- leafmap$black_white_female
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "Black and White"
+     gender_text <- "Women"
    } else if (race == c("Black", "Hispanic") & gender == "Female") {
      data <- leafmap$black_hispanic_female
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "Black and Hispanic"
+     gender_text <- "Women"
    } else if (race == "Black" & gender == "Female") {
      data <- leafmap$black_female
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "Black"
+     gender_text <- "Women"
    } else if (race == c("Hispanic", "White") & gender == c("Male", "Female")) {
      data <- leafmap$all_hispanic_white
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "Hispanic and White"
+     gender_text <- "Men and Women"
    } else if (race == c("Hispanic", "White") & gender == "Male") {
      data <- leafmap$hispanic_white_male
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "Hispanic and White"
+     gender_text <- "Men"
    } else if (race == c("Hispanic", "White") & gender == "Female") {
      data <- leafmap$hispanic_white_female
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "Hispanic and White"
+     gender_text <- "Women"
    } else if (race == "White" & gender == c("Male", "Female")) {
      data <- leafmap$all_white
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "White"
+     gender_text <- "Men and Women"
    } else if (race == "White" & gender == "Male") {
      data <- leafmap$white_male
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "White"
+     gender_text <- "Men"
    } else if (race == "White" & gender == "Female") {
      data <- leafmap$white_female
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "White"
+     gender_text <- "Women"
    } else if (race == "Hispanic" & gender == c("Male", "Female")) {
      data <- leafmap$all_hispanic
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "Hispanic"
+     gender_text <- "Men and Women"
    } else if (race == "Hispanic" & gender == "Male") {
      data <- leafmap$hispanic_male
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "Hispanic"
+     gender_text <- "Men"
    } else if (race == "Hispanic" & gender == "Female") {
      data <- leafmap$hispanic_female
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
+     race_text <- "Hispanic"
+     gender_text <- "Women"
    } else if (is.null(race) | is.null(gender)) {
      data <- leafmap$all
-     pal <- colorQuantile("RdYlGn", data, n = 6)
+     pal <- colorNumeric("RdYlGn", data)
    }
      
+   popup_dat <- paste0("<strong>County: </strong>",
+                       leafmap$id,
+                       "<br><strong>Mean Income Rank: </strong>",
+                       data, "%")
+   
    leafletProxy("mymap", data = leafmap) %>%
      clearShapes() %>%
      clearControls() %>%
@@ -132,6 +177,7 @@ server <- function(input, output) {
      addLegend("bottomright", pal = pal, values = data,
                title = "Mean Income Rank (%)",
                opacity = 1)
+   
  })
 
 }

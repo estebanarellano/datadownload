@@ -87,9 +87,38 @@ popup_dat <- paste0("<strong>County: </strong>",
                     "<br><strong>Mean Income Rank for Children Whose Parents Were at 25th Percentile: </strong>",
                     leafmap$all, "%")
 
-pal <- colorQuantile("RdYlGn", NULL, n = 10)
+pal <- colorNumeric("RdYlGn", NULL)
 
 leaflet(data = leafmap) %>% 
+  addTiles() %>%
+  addPolygons(fillColor = ~pal(all),
+              fillOpacity = 0.8,
+              color = "#BDBDC3",
+              weight = 1,
+              popup = popup_dat) %>%
+  addLegend("bottomright", pal = pal, values = ~all,
+            title = "Mean Income Rank (%)",
+            opacity = 1)
+```
+
+```{r}
+# Preparation for map with neighborhood characteristics of richest counties
+rich_map <- map %>%
+  filter(all >= 50) %>%
+  select(GEOID, id, all)
+
+us.map.county.rich <- us.map.county[us.map.county$GEOID %in% rich_map$GEOID,]
+
+leafmap_rich <- merge(us.map.county.rich, rich_map, by= 'GEOID', duplicateGeoms = TRUE)
+
+popup_dat <- paste0("<strong>County: </strong>",
+                    leafmap$id,
+                    "<br><strong>Mean Income Rank for Children Whose Parents Were at 25th Percentile: </strong>",
+                    leafmap$all, "%")
+
+pal <- colorNumeric("RdYlGn", NULL)
+
+leaflet(data = leafmap_rich) %>% 
   addTiles() %>%
   addPolygons(fillColor = ~pal(all),
               fillOpacity = 0.8,
