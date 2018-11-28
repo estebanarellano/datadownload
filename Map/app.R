@@ -14,7 +14,7 @@ library(leaflet)
 # Reads rds from the process_data file 
 leafmap <- read_rds("./leafmap.rds")
 
-# Define UI for application that draws a histogram
+# Define UI for application that displays a map
 ui <- fluidPage(
    
   titlePanel("Geographic Income Explorer by US County"),
@@ -36,10 +36,11 @@ ui <- fluidPage(
   )
 )
 
-# Define server logic required to draw a histogram
+# Define server logic required to create a Leaflet map
 server <- function(input, output) {
   
- output$mymap <- renderLeaflet({
+  # Creates basic part of map that will not change with user input
+  output$mymap <- renderLeaflet({
    
    leaflet() %>% 
      addTiles() %>%
@@ -47,10 +48,12 @@ server <- function(input, output) {
    
  })
  
- observe({
+  # Creates observe function that will select the appropriate data to display based on user input
+  observe({
    race <- input$race
    gender <- input$gender
    
+   # if/else if sequence that determines column to display, associate color palette, and text
    if (race == c("Black", "White", "Hispanic") & gender == c("Male", "Female")) {
      data <- leafmap$all
      pal <- colorNumeric("RdYlGn", data)
@@ -160,12 +163,14 @@ server <- function(input, output) {
      data <- leafmap$all
      pal <- colorNumeric("RdYlGn", data)
    }
-     
+   
+   # Creates function to display data when a county is clicked
    popup_dat <- paste0("<strong>County: </strong>",
                        leafmap$id,
                        "<br><strong>Mean Income Rank: </strong>",
                        data, "%")
    
+   # Leaflet proxy that only changes the appropriate parts of the map based on user input
    leafletProxy("mymap", data = leafmap) %>%
      clearShapes() %>%
      clearControls() %>%

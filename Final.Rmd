@@ -60,12 +60,14 @@ tidy_all <- tidy_all[, c(1, 2, 9, 11, 3:8, 12:43)]
 ```{r}
 # Preparation for map
 map <- tidy_income %>%
+  # Sequence to create GEOID variable to join with us.map.county object
   mutate(state_code = ifelse(nchar(state_code) == 1, paste(0, state_code, sep = ""), state_code)) %>%
   mutate(county_code = ifelse(nchar(county_code) == 1, paste("00", county_code, sep = ""), county_code)) %>%
   mutate(county_code = ifelse(nchar(county_code) == 2, paste(0, county_code, sep = ""), county_code)) %>%
   mutate(GEOID = paste(state_code, county_code, sep = "")) %>%
   mutate(state_code = as.numeric(state_code), county_code = as.numeric(county_code)) %>%
   mutate(category = ifelse(is.na(race) & is.na(gender), "all", ifelse(is.na(race), paste("all", gender, sep = "_"), ifelse(is.na(gender), paste("all", race, sep = "_"), paste(race, gender, sep = "_"))))) %>%
+  # Limit values to only include income
   filter(metric_type == "income") %>%
   mutate(value = value * 100) %>%
   select(GEOID, id, category, value) %>%
@@ -75,11 +77,13 @@ map <- tidy_income %>%
   mutate(black_hispanic_male = (black_male + hispanic_male) / 2, black_hispanic_female = (black_female + hispanic_female) / 2, all_black_hispanic = (all_black + all_hispanic) / 2) %>%
   mutate(hispanic_white_male = (hispanic_male + white_male) / 2, hispanic_white_female = (hispanic_female + white_female) / 2, all_hispanic_white = (all_hispanic + all_white) / 2)
 
+# Reads in file from U.S. census website with FIPS code
 us.map.county <- readOGR(dsn= './cb_2017_us_county_20m', layer = "cb_2017_us_county_20m", stringsAsFactors = FALSE)
 
 # Remove Alaska(2), Hawaii(15), Puerto Rico (72), Guam (66), Virgin Islands (78), American Samoa (60) Mariana Islands (69), Micronesia (64), Marshall Islands (68), Palau (70), Minor Islands (74)
 us.map.county <- us.map.county[!us.map.county$STATEFP %in% c("02", "15", "72", "66", "78", "60", "69","64", "68", "70", "74", "81", "84", "86", "87", "89", "71", "76","95", "79"),]
 
+# Merges data frame with SpatialPolygonsDataFrame
 leafmap <- merge(us.map.county, map, by= 'GEOID', duplicateGeoms = TRUE)
 
 popup_dat <- paste0("<strong>County: </strong>",
@@ -103,18 +107,29 @@ leaflet(data = leafmap) %>%
 
 ```{r}
 # Preparation for map with neighborhood characteristics of richest counties
-rich_map <- map %>%
-  filter(all >= 50) %>%
-  select(GEOID, id, all)
+rich_neighborhood <- neighborhood %>%
+  mutate(state_code = ifelse(nchar(state_code) == 1, paste(0, state_code, sep = ""), state_code)) %>%
+  mutate(county_code = ifelse(nchar(county_code) == 1, paste("00", county_code, sep = ""), county_code)) %>%
+  mutate(county_code = ifelse(nchar(county_code) == 2, paste(0, county_code, sep = ""), county_code)) %>%
+  mutate(GEOID = paste(state_code, county_code, sep = "")) %>%
+  mutate(state_code = as.numeric(state_code), county_code = as.numeric(county_code)) 
 
+rich_neighborhood <- rich_neighborhood[, 5:36]
+
+rich_map <- map %>%
+  select(GEOID, id, all) %>%
+  left_join(rich_neighborhood, by = "GEOID")
+  
 us.map.county.rich <- us.map.county[us.map.county$GEOID %in% rich_map$GEOID,]
 
 leafmap_rich <- merge(us.map.county.rich, rich_map, by= 'GEOID', duplicateGeoms = TRUE)
 
+leafmap_rich <- leafmap_rich[!is.na(leafmap_rich@data$all), ]
+
 popup_dat <- paste0("<strong>County: </strong>",
-                    leafmap$id,
+                    leafmap_rich$id,
                     "<br><strong>Mean Income Rank for Children Whose Parents Were at 25th Percentile: </strong>",
-                    leafmap$all, "%")
+                    leafmap_rich$all, "%")
 
 pal <- colorNumeric("RdYlGn", NULL)
 

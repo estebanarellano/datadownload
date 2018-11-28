@@ -1,0 +1,12 @@
+name: Income
+title: Income
+username:
+account: estebanarellano
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 593537
+bundleId: 1724975
+url: https://estebanarellano.shinyapps.io/Income/
+when: 1543372591.15964
+asMultiple: FALSE
+asStatic: FALSE
