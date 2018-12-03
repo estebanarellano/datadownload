@@ -12,7 +12,7 @@ library(tidyverse)
 library(leaflet)
 
 # Reads rds from the process_data file 
-leafmap <- read_rds("./leafmap_rich.rds")
+leafmap <- read_rds("leafmap_rich.rds")
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(

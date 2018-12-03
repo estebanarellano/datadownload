@@ -12,7 +12,7 @@ library(fs)
 library(stringr)
 library(cdlTools)
 library(tigris)
-library(rgdal) # Tools to create leaflet sp frame
+library(rgdal)
 library(leaflet)
 
 income <- read.csv("https://opportunityinsights.org/wp-content/uploads/2018/10/county_outcomes_simple.csv")
@@ -24,9 +24,11 @@ all <- income %>%
 
 ```
 
+## Preparation for Income shiny
 ```{r}
-# Preparation for Income shiny
 fips <- as_data_frame(fips_codes)
+
+# Columns are limited to integer representations of states and counties that can be used in the GEOID column for future Shiny apps. The name for a county and state are then pasted and used for identification.
 
 fips <- fips %>%
   mutate(state_code = as.numeric(state_code)) %>%
@@ -34,17 +36,24 @@ fips <- fips %>%
   mutate(id = paste(county, state, sep = ", ")) %>%
   select(state_code, county_code, state_name, id)
 
+# The pulled data table has a column for each key and variable pair per race and gender. The "income" table was made tidy by making a row for each observation. Columns were added to each row to indicate the gender of the pooled value ("male", "female", or "pooled"/all), the race ("black", "white", or "hisp"--recoded to "hispanic" for consistency), and type of value provided (income/"kfr", "jail", or "count").
+
 tidy_income <- income %>%
   gather("metric", "value", kfr_pooled_pooled_p25:hisp_female_count) %>%
   mutate(gender = str_extract(string = metric, pattern = "male|female")) %>%
   mutate(race = str_extract(string = metric, pattern = "black|hisp|white")) %>%
   mutate(metric_type = str_extract(string = metric, pattern = "kfr|jail|count")) %>%
   mutate(metric_type = fct_recode(metric_type, income = "kfr")) %>%
-  mutate(se = str_detect(string = metric, pattern = "se")) %>% # Categories standard error income values
+  
+  # Many of the values contained a column for standard error. These were removed to only keep the actual income rank values.
+  
+  mutate(se = str_detect(string = metric, pattern = "se")) %>%
   mutate(race = fct_recode(race, hispanic = "hisp")) %>%
   rename(state_code = state, county_code = county) %>%
   filter(se != TRUE, metric_type == "income") %>% # Keeps all income, removes standard errors
   left_join(fips)
+
+# To facilitate the join, the names of state_code and county_code were changed
 
 neighborhood <- neighborhood %>%
   rename(state_code = state, county_code = county)
@@ -54,42 +63,58 @@ tidy_all <- tidy_income %>%
 
 tidy_all <- as_data_frame(tidy_all)
 
+# Columns are reordered to place identifying information at the front
+
 tidy_all <- tidy_all[, c(1, 2, 9, 11, 3:8, 12:43)]
 ```
 
+## Preparation for Map Shiny
 ```{r}
-# Preparation for map
 map <- tidy_income %>%
-  # Sequence to create GEOID variable to join with us.map.county object
+  # It is necessary to construct a five-digit GEOID column (two digit state code + three digit county code) to join with the us.map.county object from the U.S. Census website
   mutate(state_code = ifelse(nchar(state_code) == 1, paste(0, state_code, sep = ""), state_code)) %>%
   mutate(county_code = ifelse(nchar(county_code) == 1, paste("00", county_code, sep = ""), county_code)) %>%
   mutate(county_code = ifelse(nchar(county_code) == 2, paste(0, county_code, sep = ""), county_code)) %>%
   mutate(GEOID = paste(state_code, county_code, sep = "")) %>%
   mutate(state_code = as.numeric(state_code), county_code = as.numeric(county_code)) %>%
   mutate(category = ifelse(is.na(race) & is.na(gender), "all", ifelse(is.na(race), paste("all", gender, sep = "_"), ifelse(is.na(gender), paste("all", race, sep = "_"), paste(race, gender, sep = "_"))))) %>%
-  # Limit values to only include income
+  
+  # Because multiple metric types are still in the data set (jail, count, etc.), results are only limited to those relating to "income".
+  
   filter(metric_type == "income") %>%
+  
+  # Value is multiplied by 100 as an aesthetic representation of percentages
   mutate(value = value * 100) %>%
   select(GEOID, id, category, value) %>%
   group_by(GEOID) %>%
   spread(category, value) %>%
+  
+  # Because the Shiny will display aggregate data based on any sample size, extra columns were added to the data set that reflected the average between two types of responses
+  
   mutate(black_white_male = (black_male + white_male) / 2, black_white_female = (black_female + white_female) / 2, all_black_white = (all_black + all_white) / 2) %>%
   mutate(black_hispanic_male = (black_male + hispanic_male) / 2, black_hispanic_female = (black_female + hispanic_female) / 2, all_black_hispanic = (all_black + all_hispanic) / 2) %>%
   mutate(hispanic_white_male = (hispanic_male + white_male) / 2, hispanic_white_female = (hispanic_female + white_female) / 2, all_hispanic_white = (all_hispanic + all_white) / 2)
 
 # Reads in file from U.S. census website with FIPS code
+
 us.map.county <- readOGR(dsn= './cb_2017_us_county_20m', layer = "cb_2017_us_county_20m", stringsAsFactors = FALSE)
 
-# Remove Alaska(2), Hawaii(15), Puerto Rico (72), Guam (66), Virgin Islands (78), American Samoa (60) Mariana Islands (69), Micronesia (64), Marshall Islands (68), Palau (70), Minor Islands (74)
+# Removes Alaska(2), Hawaii(15), Puerto Rico (72), Guam (66), Virgin Islands (78), American Samoa (60) Mariana Islands (69), Micronesia (64), Marshall Islands (68), Palau (70), Minor Islands (74) that would disrupt the aesthetics of the final object.
+
 us.map.county <- us.map.county[!us.map.county$STATEFP %in% c("02", "15", "72", "66", "78", "60", "69","64", "68", "70", "74", "81", "84", "86", "87", "89", "71", "76","95", "79"),]
 
 # Merges data frame with SpatialPolygonsDataFrame
+
 leafmap <- merge(us.map.county, map, by= 'GEOID', duplicateGeoms = TRUE)
+
+# Sample information for information provided when clicked on the map. In the actual Shiny, the County name stays the same but the value provided is dynamic and changes based on the column of data selected.
 
 popup_dat <- paste0("<strong>County: </strong>",
                     leafmap$id,
                     "<br><strong>Mean Income Rank for Children Whose Parents Were at 25th Percentile: </strong>",
                     leafmap$all, "%")
+
+# A color palette is created that transitions from red to yellow to green based on a provided scale.
 
 pal <- colorNumeric("RdYlGn", NULL)
 
