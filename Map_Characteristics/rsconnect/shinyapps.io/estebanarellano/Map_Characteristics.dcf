@@ -5,8 +5,8 @@ account: estebanarellano
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 594637
-bundleId: 1726550
+bundleId: 1737270
 url: https://estebanarellano.shinyapps.io/Map_Characteristics/
-when: 1543427538.93148
+when: 1543868021.32924
 asMultiple: FALSE
 asStatic: FALSE
